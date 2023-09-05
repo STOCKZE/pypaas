@@ -12,7 +12,6 @@ import time
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 
-# Class for deploying and saving the application
 class DeployAndSave:
     def __init__(self):
         self.version_map = {}  # To keep track of versions for each app
@@ -37,8 +36,10 @@ RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.
             docker_image_name = f"{app_name}:{version}"
             subprocess.run(["docker", "build", "-t", docker_image_name, app_name], check=True)
             
-            # Run Docker container
-            docker_run_command = ["docker", "run", "-d", "--name", f"{app_name}_container"]
+            # Run Docker container and map port
+            host_port = 8000  # You can make this dynamic
+            docker_run_command = ["docker", "run", "-d", "--name", f"{app_name}_container", "-p", f"{host_port}:80"]  # Change 80 to the app's actual port if different
+            
             if env_vars:
                 for key, value in json.loads(env_vars).items():
                     docker_run_command.extend(["-e", f"{key}={value}"])
@@ -58,8 +59,10 @@ RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.
             new_version = f"v{float(version[1:]) + 0.1}"
             self.version_map[app_name] = new_version
             
+            return host_port  # Return the host port for Streamlit UI
         except Exception as e:
             logging.error(f"Deployment error: {e}")
+            return None
 
 # Class for rolling back the application
 class Rollback:
@@ -125,8 +128,12 @@ def run_streamlit_ui():
     repo_url = st.text_input("Git Repo URL")
     deploy_button = st.button("Deploy")
     if deploy_button:
-        asyncio.run(deploy_and_save.deploy(app_name, repo_url))
-
+        host_port = asyncio.run(deploy_and_save.deploy(app_name, repo_url))
+        if host_port:
+            st.success(f"App is deployed. Access it at http://localhost:{host_port}")
+        else:
+            st.error("Failed to deploy the app.")
+        
     # Rollback
     st.subheader("Rollback")
     rollback_app = st.text_input("App to Rollback")
