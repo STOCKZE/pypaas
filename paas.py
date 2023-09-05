@@ -15,13 +15,15 @@ logging.basicConfig(level=logging.INFO)
 class DeployAndSave:
     def __init__(self):
         self.version_map = {}  # To keep track of versions for each app
-    
+
+    # Asynchronous function to deploy the application
     async def deploy(self, app_name, app_repo_url, env_vars=None, resource_limits=None):
-        version = self.version_map.get(app_name, "v1.0")  # Fetch the latest version or set to v1.0
+        # Fetch the latest version or set to v1.0
+        version = self.version_map.get(app_name, "v1.0")
         try:
             # Clone the git repo
             subprocess.run(["git", "clone", app_repo_url, app_name], check=True)
-            
+
             # Create Dockerfile for FastAPI application
             dockerfile_content = f"""\
 FROM tiangolo/uvicorn-gunicorn:python3.10-slim
@@ -58,11 +60,12 @@ RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.
             # Increment version for the next deploy
             new_version = f"v{float(version[1:]) + 0.1}"
             self.version_map[app_name] = new_version
-            
+
             return host_port  # Return the host port for Streamlit UI
         except Exception as e:
             logging.error(f"Deployment error: {e}")
             return None
+
 
 # Class for rolling back the application
 class Rollback:
@@ -121,6 +124,11 @@ monitor_and_scale = MonitorAndScale()
 # Streamlit UI
 def run_streamlit_ui():
     st.title("Mini PaaS UI")
+
+    # Show list of deployed apps
+    st.subheader("List of Deployed Apps")
+    deployed_apps = deploy_and_save.version_map.keys()
+    st.write(deployed_apps)
 
     # Deploy new app
     st.subheader("Deploy New App")
