@@ -65,7 +65,7 @@ Description=Streamlit App Service
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python3 -m streamlit run /path/to/your/paas.py
+ExecStart=/usr/bin/python3 -m streamlit run `/paas.py
 Restart=always
 User=$(whoami)
 
