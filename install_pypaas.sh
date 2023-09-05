@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+#set -e
 
 # Update and Upgrade package lists
 sudo apt update -y
