@@ -26,9 +26,9 @@ class DeployAndSave:
             # Create Dockerfile for FastAPI application
             dockerfile_content = f"""\
 FROM tiangolo/uvicorn-gunicorn:python3.10-slim
-COPY ./{app_name} /{app_name}
-COPY ./requirements.txt /{app_name}/requirements.txt
-RUN pip install --no-cache-dir -r /{app_name}/requirements.txt
+COPY . /app
+WORKDIR /app
+RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
 """
             with open(f"{app_name}/Dockerfile", "w") as f:
                 f.write(dockerfile_content)
