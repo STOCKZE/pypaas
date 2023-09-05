@@ -65,9 +65,9 @@ Description=Streamlit App Service
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python3 -m streamlit run `/paas.py
+ExecStart=/usr/bin/python3 -m streamlit run /root/paas.py
 Restart=always
-User=$(whoami)
+User=root
 
 [Install]
 WantedBy=multi-user.target
@@ -79,3 +79,6 @@ sudo systemctl daemon-reload
 # Enable and start the Streamlit systemd service
 sudo systemctl enable streamlit-app.service
 sudo systemctl start streamlit-app.service
+#sudo systemctl unmask streamlit-app.service
+#sudo systemctl stop streamlit-app.service
+#sudo systemctl daemon-reload
