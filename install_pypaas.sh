@@ -59,17 +59,22 @@ sudo docker run -d --name caddy --network=pass_network -p 80:80 -p 443:443 -v $(
 wget "https://raw.githubusercontent.com/STOCKZE/pypaas/main/paas.py"
 
 # Create and enable a systemd service for the Streamlit app
-echo "[Unit]
+sudo bash -c 'cat > /etc/systemd/system/streamlit-app.service <<EOL
+[Unit]
 Description=Streamlit App Service
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python3 -m streamlit run ~/paas.py
+ExecStart=/usr/bin/python3 -m streamlit run /path/to/your/paas.py
 Restart=always
-User=yourusername
+User=$(whoami)
 
 [Install]
-WantedBy=multi-user.target" > /etc/systemd/system/streamlit-app.service
+WantedBy=multi-user.target
+EOL'
+
+# Reload systemd to recognize the new service
+sudo systemctl daemon-reload
 
 # Enable and start the Streamlit systemd service
 sudo systemctl enable streamlit-app.service
