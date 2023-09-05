@@ -25,16 +25,16 @@ sudo pip3 install streamlit asyncio aiofiles psutil matplotlib numpy
 # Run common Docker containers with auto-restart
 
 # Keycloak
-sudo docker run -d --restart=always --name keycloak --network=pass_network -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8080:8080 jboss/keycloak
+#sudo docker run -d --restart=always --name keycloak --network=pass_network -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8080:8080 jboss/keycloak
 
 # Redis
-sudo docker run -d --restart=always --name redis --network=pass_network -p 6379:6379 redis
+#sudo docker run -d --restart=always --name redis --network=pass_network -p 6379:6379 redis
 
 # NATS
-sudo docker run -d --restart=always --name nats --network=pass_network -p 4222:4222 -p 6222:6222 -p 8222:8222 nats
+#sudo docker run -d --restart=always --name nats --network=pass_network -p 4222:4222 -p 6222:6222 -p 8222:8222 nats
 
 # PostgreSQL
-sudo docker run -d --restart=always --name postgres --network=pass_network -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=admin -e POSTGRES_DB=mydatabase -p 5432:5432 postgres
+#sudo docker run -d --restart=always --name postgres --network=pass_network -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=admin -e POSTGRES_DB=mydatabase -p 5432:5432 postgres
 
 # Create Caddyfile
 cat > Caddyfile <<EOL
