@@ -9,21 +9,24 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 
+from matplotlib.backends.backend_agg import RendererAgg
+_lock = RendererAgg.lock
+
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 
 class DeployAndSave:
     def __init__(self):
         self.version_map = {}  # To keep track of versions for each app
+        # Initialize a local Docker registry if not already running
+        subprocess.run(["docker", "run", "-d", "-p", "5000:5000", "--name", "local_registry", "registry:2"], check=True)
 
-    # Asynchronous function to deploy the application
     async def deploy(self, app_name, app_repo_url, env_vars=None, resource_limits=None):
-        # Fetch the latest version or set to v1.0
-        version = self.version_map.get(app_name, "v1.0")
+        version = self.version_map.get(app_name, "v1.0")  # Fetch the latest version or set to v1.0
         try:
             # Clone the git repo
             subprocess.run(["git", "clone", app_repo_url, app_name], check=True)
-
+            
             # Create Dockerfile for FastAPI application
             dockerfile_content = f"""\
 FROM tiangolo/uvicorn-gunicorn:python3.10-slim
@@ -35,12 +38,17 @@ RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.
                 f.write(dockerfile_content)
             
             # Build Docker image
-            docker_image_name = f"{app_name}:{version}"
-            subprocess.run(["docker", "build", "-t", docker_image_name, app_name], check=True)
+            local_image_name = f"{app_name}:{version}"
+            subprocess.run(["docker", "build", "-t", local_image_name, app_name], check=True)
+            
+            # Tag and push Docker image to local registry
+            registry_image_name = f"localhost:5000/{local_image_name}"
+            subprocess.run(["docker", "tag", local_image_name, registry_image_name], check=True)
+            subprocess.run(["docker", "push", registry_image_name], check=True)
             
             # Run Docker container and map port
-            host_port = 8000  # You can make this dynamic
-            docker_run_command = ["docker", "run", "-d", "--name", f"{app_name}_container", "-p", f"{host_port}:80"]  # Change 80 to the app's actual port if different
+            host_port = 8000  # Make this dynamic based on available ports
+            docker_run_command = ["docker", "run", "-d", "--name", f"{app_name}_container", "-p", f"{host_port}:80"]
             
             if env_vars:
                 for key, value in json.loads(env_vars).items():
@@ -50,12 +58,9 @@ RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.
                     docker_run_command.extend(['--cpus', str(resource_limits['cpu'])])
                 if 'mem' in resource_limits:
                     docker_run_command.extend(['--memory', str(resource_limits['mem'])])
-            docker_run_command.append(docker_image_name)
-            subprocess.run(docker_run_command, check=True)
             
-            # Save Docker image as a tar file
-            tar_file_path = f"{app_name}_{version}.tar"
-            subprocess.run(["docker", "save", "-o", tar_file_path, docker_image_name], check=True)
+            docker_run_command.append(registry_image_name)
+            subprocess.run(docker_run_command, check=True)
             
             # Increment version for the next deploy
             new_version = f"v{float(version[1:]) + 0.1}"
@@ -66,15 +71,12 @@ RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.
             logging.error(f"Deployment error: {e}")
             return None
 
-
-# Class for rolling back the application
 class Rollback:
     async def rollback(self, app_name, version):
         try:
-            tar_file_path = f"{app_name}_{version}.tar"
-            subprocess.run(["docker", "load", "-i", tar_file_path], check=True)
-            docker_image_name = f"{app_name}:{version}"
-            subprocess.run(["docker", "run", "-d", "--name", f"{app_name}_container", docker_image_name], check=True)
+            registry_image_name = f"localhost:5000/{app_name}:{version}"
+            subprocess.run(["docker", "pull", registry_image_name], check=True)
+            subprocess.run(["docker", "run", "-d", "--name", f"{app_name}_container", registry_image_name], check=True)
         except Exception as e:
             logging.error(f"Rollback error: {e}")
 
@@ -134,30 +136,33 @@ def run_streamlit_ui():
     st.subheader("Deploy New App")
     app_name = st.text_input("App Name")
     repo_url = st.text_input("Git Repo URL")
-    deploy_button = st.button("Deploy")
+    threshold = st.number_input("Threshold for Auto-Scaling", min_value=0, value=10)
+    deploy_button = st.button("Deploy and Monitor")
+    
     if deploy_button:
         host_port = asyncio.run(deploy_and_save.deploy(app_name, repo_url))
         if host_port:
             st.success(f"App is deployed. Access it at http://localhost:{host_port}")
+            log_file_path = "/var/log/caddy/access.log"  # Replace this with the actual path to your Caddy log file
+            asyncio.run(monitor_and_scale.monitor_and_scale(app_name, log_file_path, threshold))
         else:
             st.error("Failed to deploy the app.")
-        
+    
+    # Matplotlib chart for live visits
+    st.subheader("Live Visits")
+    with _lock:
+        # Assume fig is a Matplotlib figure
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3], [1, 4, 9])
+        st.pyplot(fig)
+    
     # Rollback
     st.subheader("Rollback")
-    rollback_app = st.text_input("App to Rollback")
-    rollback_version = st.text_input("Version to Rollback To")
-    rollback_button = st.button("Rollback")
+    rollback_app = st.text_input("App to Rollback", key='rollback_app')
+    rollback_version = st.text_input("Version to Rollback To", key='rollback_version')
+    rollback_button = st.button("Rollback", key='rollback_button')
     if rollback_button:
         asyncio.run(rollback.rollback(rollback_app, rollback_version))
-
-    # Run monitor and scale
-    st.subheader("Monitor and Scale")
-    app_name_scale = st.text_input("App to Monitor and Scale")
-    threshold = st.number_input("Threshold for Scaling", min_value=0)
-    monitor_button = st.button("Monitor and Scale")
-    if monitor_button:
-        log_file_path = "/var/log/caddy/access.log"  # Replace this with the actual path to your Caddy log file
-        asyncio.run(monitor_and_scale.monitor_and_scale(app_name_scale, log_file_path, threshold))
 
 if __name__ == "__main__":
     run_streamlit_ui()
