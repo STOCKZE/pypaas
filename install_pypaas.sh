@@ -20,7 +20,8 @@ sudo apt install -y docker-compose
 docker network create pass_network
 
 # Install Streamlit & other paas.py dependencies
-pip3 install streamlit asyncio aiofiles psutil matplotlib numpy time
+pip3 install streamlit 
+pip3 install asyncio aiofiles psutil matplotlib numpy
 
 # Run common Docker containers
 
