@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Update package lists
-sudo apt update
+# Update Upgrade package lists
+sudo apt update -y
+sudo apt upgrade -y
 
 # Install Python and pip
 sudo apt install -y python3 python3-pip
@@ -15,7 +16,7 @@ sudo systemctl enable docker
 sudo apt install -y docker-compose
 
 # Create a custom Docker network
-docker network create my_network
+docker network create pass_network
 
 # Install Streamlit
 pip3 install streamlit
@@ -53,5 +54,8 @@ EOL
 # Caddy
 docker run -d --name caddy --network=my_network -p 80:80 -p 443:443 -v $(pwd)/Caddyfile:/etc/caddy/Caddyfile caddy:2.0.0-alpine
 
-# Run Streamlit app (assuming you upload paas.py)
+# Download paas.py using wget
+wget "https://raw.githubusercontent.com/STOCKZE/pypaas/main/paas.py"
+
+# Run Streamlit app 
 streamlit run paas.py
