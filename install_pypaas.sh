@@ -24,16 +24,16 @@ pip3 install streamlit
 # Run common Docker containers
 
 # Keycloak
-docker run -d --name keycloak --network=my_network -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8080:8080 jboss/keycloak
+docker run -d --name keycloak --network=pass_network -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8080:8080 jboss/keycloak
 
 # Redis
-docker run -d --name redis --network=my_network -p 6379:6379 redis
+docker run -d --name redis --network=pass_network -p 6379:6379 redis
 
 # NATS
-docker run -d --name nats --network=my_network -p 4222:4222 -p 6222:6222 -p 8222:8222 nats
+docker run -d --name nats --network=pass_network -p 4222:4222 -p 6222:6222 -p 8222:8222 nats
 
 # PostgreSQL
-docker run -d --name postgres --network=my_network -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=admin -e POSTGRES_DB=mydatabase -p 5432:5432 postgres
+docker run -d --name postgres --network=pass_network -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=admin -e POSTGRES_DB=mydatabase -p 5432:5432 postgres
 
 # Create Caddyfile
 cat > Caddyfile <<EOL
@@ -52,7 +52,7 @@ cat > Caddyfile <<EOL
 EOL
 
 # Caddy
-docker run -d --name caddy --network=my_network -p 80:80 -p 443:443 -v $(pwd)/Caddyfile:/etc/caddy/Caddyfile caddy:2.0.0-alpine
+docker run -d --name caddy --network=pass_network -p 80:80 -p 443:443 -v $(pwd)/Caddyfile:/etc/caddy/Caddyfile caddy:2.0.0-alpine
 
 # Download paas.py using wget
 wget "https://raw.githubusercontent.com/STOCKZE/pypaas/main/paas.py"
