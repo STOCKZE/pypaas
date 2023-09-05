@@ -18,8 +18,12 @@ logging.basicConfig(level=logging.INFO)
 class DeployAndSave:
     def __init__(self):
         self.version_map = {}  # To keep track of versions for each app
-        # Initialize a local Docker registry if not already running
-        subprocess.run(["docker", "run", "-d", "-p", "5000:5000", "--name", "local_registry", "registry:2"], check=True)
+
+        # Check if a local Docker registry is already running
+        result = subprocess.run(["docker", "ps", "-f", "name=local_registry"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if "local_registry" not in result.stdout:
+            # Initialize a local Docker registry if not already running
+            subprocess.run(["docker", "run", "-d", "-p", "5000:5000", "--name", "local_registry", "registry:2"], check=True)
 
     async def deploy(self, app_name, app_repo_url, env_vars=None, resource_limits=None):
         version = self.version_map.get(app_name, "v1.0")  # Fetch the latest version or set to v1.0
