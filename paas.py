@@ -4,7 +4,10 @@ import json
 import subprocess
 import logging
 import aiofiles
-import os
+import psutil
+import matplotlib.pyplot as plt
+import numpy as np
+import time
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -12,15 +15,29 @@ logging.basicConfig(level=logging.INFO)
 # Class for deploying and saving the application
 class DeployAndSave:
     def __init__(self):
-        self.version_map = {}
-
+        self.version_map = {}  # To keep track of versions for each app
+    
     async def deploy(self, app_name, app_repo_url, env_vars=None, resource_limits=None):
         version = self.version_map.get(app_name, "v1.0")  # Fetch the latest version or set to v1.0
         try:
+            # Clone the git repo
             subprocess.run(["git", "clone", app_repo_url, app_name], check=True)
+            
+            # Create Dockerfile for FastAPI application
+            dockerfile_content = """\
+FROM tiangolo/uvicorn-gunicorn-fastapi:python3.8-alpine
+COPY ./app /app
+COPY ./requirements.txt /app/
+RUN pip install --no-cache-dir -r /app/requirements.txt
+"""
+            with open(f"{app_name}/Dockerfile", "w") as f:
+                f.write(dockerfile_content)
+            
+            # Build Docker image
             docker_image_name = f"{app_name}:{version}"
             subprocess.run(["docker", "build", "-t", docker_image_name, app_name], check=True)
             
+            # Run Docker container
             docker_run_command = ["docker", "run", "-d", "--name", f"{app_name}_container"]
             if env_vars:
                 for key, value in json.loads(env_vars).items():
@@ -33,6 +50,7 @@ class DeployAndSave:
             docker_run_command.append(docker_image_name)
             subprocess.run(docker_run_command, check=True)
             
+            # Save Docker image as a tar file
             tar_file_path = f"{app_name}_{version}.tar"
             subprocess.run(["docker", "save", "-o", tar_file_path, docker_image_name], check=True)
             
