@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Update Upgrade package lists
-export DEBIAN_FRONTEND=noninteractive
 sudo apt update -y
-sudo apt upgrade -y -o Dpkg::Options::="--force-confnew"
+sudo DEBIAN_FRONTEND=noninteractive apt upgrade -y -o Dpkg::Options::="--force-confnew"
+
 
 # Install Python and pip
 sudo apt install -y python3 python3-pip
