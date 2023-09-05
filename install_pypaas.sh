@@ -1,9 +1,9 @@
 #!/bin/bash
+set -e
 
-# Update Upgrade package lists
+# Update and Upgrade package lists
 sudo apt update -y
 sudo DEBIAN_FRONTEND=noninteractive apt upgrade -y -o Dpkg::Options::="--force-confnew"
-
 
 # Install Python and pip
 sudo apt install -y python3 python3-pip
@@ -17,25 +17,24 @@ sudo systemctl enable docker
 sudo apt install -y docker-compose
 
 # Create a custom Docker network
-docker network create pass_network
+sudo docker network create pass_network
 
 # Install Streamlit & other paas.py dependencies
-pip3 install streamlit 
-pip3 install asyncio aiofiles psutil matplotlib numpy
+pip3 install streamlit asyncio aiofiles psutil matplotlib numpy
 
-# Run common Docker containers
+# Run common Docker containers with auto-restart
 
 # Keycloak
-docker run -d  --restart=always --name keycloak --network=pass_network -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8080:8080 jboss/keycloak
+sudo docker run -d --restart=always --name keycloak --network=pass_network -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8080:8080 jboss/keycloak
 
 # Redis
-docker run -d  --restart=always --name redis --network=pass_network -p 6379:6379 redis
+sudo docker run -d --restart=always --name redis --network=pass_network -p 6379:6379 redis
 
 # NATS
-docker run -d  --restart=always --name nats --network=pass_network -p 4222:4222 -p 6222:6222 -p 8222:8222 nats
+sudo docker run -d --restart=always --name nats --network=pass_network -p 4222:4222 -p 6222:6222 -p 8222:8222 nats
 
 # PostgreSQL
-docker run -d  --restart=always --name postgres --network=pass_network -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=admin -e POSTGRES_DB=mydatabase -p 5432:5432 postgres
+sudo docker run -d --restart=always --name postgres --network=pass_network -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=admin -e POSTGRES_DB=mydatabase -p 5432:5432 postgres
 
 # Create Caddyfile
 cat > Caddyfile <<EOL
@@ -54,7 +53,7 @@ cat > Caddyfile <<EOL
 EOL
 
 # Caddy
-docker run -d --name caddy --network=pass_network -p 80:80 -p 443:443 -v $(pwd)/Caddyfile:/etc/caddy/Caddyfile caddy:2.0.0-alpine
+sudo docker run -d --name caddy --network=pass_network -p 80:80 -p 443:443 -v $(pwd)/Caddyfile:/etc/caddy/Caddyfile caddy:2.0.0-alpine
 
 # Download paas.py using wget
 wget "https://raw.githubusercontent.com/STOCKZE/pypaas/main/paas.py"
@@ -65,16 +64,13 @@ Description=Streamlit App Service
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/streamlit run ~/paas.py
+ExecStart=/usr/bin/python3 -m streamlit run ~/paas.py
 Restart=always
 User=yourusername
 
 [Install]
-WantedBy=multi-user.target" > /etc/systemd/system/streamlit-app.service
+WantedBy=multi-user.target" | sudo tee /etc/systemd/system/streamlit-app.service
 
 # Enable and start the Streamlit systemd service
-systemctl enable streamlit-app.service
-systemctl start streamlit-app.service
-
-# Run Streamlit app 
-streamlit run paas.py
+sudo systemctl enable streamlit-app.service
+sudo systemctl start streamlit-app.service
