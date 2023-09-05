@@ -69,7 +69,7 @@ Restart=always
 User=yourusername
 
 [Install]
-WantedBy=multi-user.target" | sudo tee /etc/systemd/system/streamlit-app.service
+WantedBy=multi-user.target" > /etc/systemd/system/streamlit-app.service
 
 # Enable and start the Streamlit systemd service
 sudo systemctl enable streamlit-app.service
