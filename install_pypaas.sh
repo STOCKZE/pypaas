@@ -64,7 +64,7 @@ Description=Streamlit App Service
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/streamlit run ~/app.py
+ExecStart=/usr/local/bin/streamlit run ~/paas.py
 Restart=always
 User=yourusername
 
