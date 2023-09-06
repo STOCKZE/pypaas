@@ -162,16 +162,7 @@ current_instances = {'count': 1}  # Global state to store the current number of 
 
 def run_streamlit_ui():
     st.title("Mini PaaS UI")
-
-    # Placeholder for the live visits chart
-    chart_placeholder = st.empty()
-   
-    # Show list of deployed apps
-    st.subheader("List of Deployed Apps")
-    deployed_apps = deploy_and_save.version_map.items()
-    for app, version in deployed_apps:
-        st.write(f"{app} - {version}")  # Modify this line to show the port and link
-    
+      
     # Deploy new app
     st.subheader("Deploy New App")
     app_name = st.text_input("App Name")
@@ -187,14 +178,48 @@ def run_streamlit_ui():
         else:
             st.error("Failed to deploy the app.")
 
-    # Rollback
-    st.subheader("Rollback")
-    rollback_app = st.text_input("App to Rollback")
-    rollback_version = st.text_input("Version to Rollback To")
-    rollback_button = st.button("Rollback")
+    rollback_button = col5.button(f"Rollback {app}")
     if rollback_button:
-        asyncio.run(rollback.rollback(rollback_app, rollback_version))
+        st.subheader("Rollback")
+        rollback_app = st.text_input("App to Rollback")
+        rollback_version = st.text_input("Version to Rollback To")
+        rollback_button = st.button("Rollback")
+        if rollback_button:
+            asyncio.run(rollback.rollback(rollback_app, rollback_version))
+            
+    # Show list of deployed apps
+    st.subheader("List of Deployed Apps")
+    deployed_apps = deploy_and_save.version_map.items()
+    for app, version in deployed_apps:
+        col1, col2, col3, col4, col5 = st.columns(5)
+        col1.write(f"{app}")  
+        col2.write(f"{version}")  
+        col3.write(f"http://localhost:{host_port")  # Replace with the actual deployed URL and port
+        redeploy_button = col4.button(f"Redeploy {app}")
+        if redeploy_button:
+            host_port = asyncio.run(deploy_and_save.deploy(app_name, repo_url))
+            if host_port:
+                st.success(f"App is deployed. Access it at http://localhost:{host_port}")
+                log_file_path = "/var/log/caddy/access.log"  # Replace with your actual Caddy log path
+                asyncio.run(monitor_and_scale.monitor_and_scale(app_name, log_file_path, threshold))
+            else:
+                st.error("Failed to deploy the app.")
 
+    # Deploy new app in a single line
+    col1, col2, col3 = st.columns(3)
+    app_name = col1.text_input("App Name", key="deploy_app_name")
+    repo_url = col2.text_input("Git Repo URL", key="deploy_repo_url")
+    deploy_button = col3.button("Deploy", key="deploy_button")
+    if deploy_button:
+        host_port = asyncio.run(deploy_and_save.deploy(app_name, repo_url))
+        if host_port:
+            st.success(f"App is deployed. Access it at http://localhost:{host_port}")
+        else:
+            st.error("Failed to deploy the app.")
+
+    # Placeholder for the live visits chart
+    chart_placeholder = st.empty()
+    
     # Charts - Start a loop to update the live visits chart
     while True:
         # Matplotlib chart for live visits
@@ -220,7 +245,6 @@ def run_streamlit_ui():
 
         # Wait before updating again
         time.sleep(5)
-    
 
 if __name__ == "__main__":
     run_streamlit_ui()
