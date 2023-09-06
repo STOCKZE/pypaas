@@ -194,7 +194,7 @@ def run_streamlit_ui():
         col1, col2, col3, col4, col5 = st.columns(5)
         col1.write(f"{app}")  
         col2.write(f"{version}")  
-        col3.write(f"http://localhost:{host_port")  # Replace with the actual deployed URL and port
+        col3.write(f"http://localhost:{host_port}")  # Replace with the actual deployed URL and port
         redeploy_button = col4.button(f"Redeploy {app}")
         if redeploy_button:
             host_port = asyncio.run(deploy_and_save.deploy(app_name, repo_url))
