@@ -4,6 +4,7 @@ import subprocess
 import logging
 import socket
 import json
+import re
 
 def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -87,7 +88,7 @@ def run_streamlit_ui():
     deploy_button = col2.button('Deploy')
 
     if deploy_button:
-        app_name = repo_url.split('/')[-1].replace('.git', '')
+        app_name = re.sub('[^a-zA-Z0-9]', '', repo_url.split('/')[-1].lower())
         host_port = asyncio.run(deploy_and_save.deploy(app_name, repo_url))
         if host_port:
             st.success(f"App is deployed. Access it at http://{ip_address}:{host_port}")
@@ -107,10 +108,6 @@ def run_streamlit_ui():
 
         versions = list(deploy_and_save.version_map.values())
         selected_version = col4.selectbox("Version", versions, index=versions.index(version))
-
-        rollback_button = col5.button(f"Rollback {app}")
-        if rollback_button:
-            asyncio.run(rollback.rollback(app, selected_version))
 
         delete_button = col5.button(f"Delete {app}")
         if delete_button:
