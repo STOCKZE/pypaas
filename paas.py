@@ -110,7 +110,7 @@ def run_streamlit_ui():
             col1, col2, col3, col4, col5, col6 = st.columns([2, 2, 2, 1, 1, 1])
             col1.write(app)
             col2.write(deploy_and_save.repo_map.get(app, "Unknown"))
-            col3.write(f"http://localhost:{deploy_and_save.port_map.get(app, 8000)}")
+            col3.write(f"http://{ip_address}:{deploy_and_save.port_map.get(app, 8000)}")
             col4.write(version)
 
             redeploy_button = col5.button(f"Redeploy {app}")
