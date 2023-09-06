@@ -186,24 +186,25 @@ def run_streamlit_ui():
         rollback_button = st.button("Rollback")
         if rollback_button:
             asyncio.run(rollback.rollback(rollback_app, rollback_version))
-            
+    
     # Show list of deployed apps
     st.subheader("List of Deployed Apps")
     deployed_apps = deploy_and_save.version_map.items()
-    for app, version in deployed_apps:
-        col1, col2, col3, col4, col5 = st.columns(5)
-        col1.write(f"{app}")  
-        col2.write(f"{version}")  
-        col3.write(f"http://localhost:{host_port}")  # Replace with the actual deployed URL and port
-        redeploy_button = col4.button(f"Redeploy {app}")
-        if redeploy_button:
-            host_port = asyncio.run(deploy_and_save.deploy(app_name, repo_url))
-            if host_port:
-                st.success(f"App is deployed. Access it at http://localhost:{host_port}")
-                log_file_path = "/var/log/caddy/access.log"  # Replace with your actual Caddy log path
-                asyncio.run(monitor_and_scale.monitor_and_scale(app_name, log_file_path, threshold))
-            else:
-                st.error("Failed to deploy the app.")
+    if deployed_apps:  # Check if there are deployed apps
+        for app, version in deployed_apps:
+            col1, col2, col3, col4, col5 = st.columns(5)
+            col1.write(f"{app}")  
+            col2.write(f"{version}")  
+            col3.write(f"http://localhost:{host_port}")  # Replace with the actual deployed URL and port
+            redeploy_button = col4.button(f"Redeploy {app}")
+            if redeploy_button:
+                host_port = asyncio.run(deploy_and_save.deploy(app_name, repo_url))
+                if host_port:
+                    st.success(f"App is deployed. Access it at http://localhost:{host_port}")
+                    log_file_path = "/var/log/caddy/access.log"  # Replace with your actual Caddy log path
+                    asyncio.run(monitor_and_scale.monitor_and_scale(app_name, log_file_path, threshold))
+                else:
+                    st.error("Failed to deploy the app.")
 
     # Deploy new app in a single line
     col1, col2, col3 = st.columns(3)
