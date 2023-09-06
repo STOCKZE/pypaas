@@ -16,3 +16,6 @@ docker rm $(docker ps -a -q)
 docker system prune -a
 
 docker ps -a
+
+
+rm -rf *
